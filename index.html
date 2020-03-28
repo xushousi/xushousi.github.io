@@ -133,6 +133,102 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2020/03/28/C/debugg_tool_gdb1/" title="本文来自 《Linux_c编程一站式学习》">调试工具gdb（1）</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2020-03-28  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="调试实例"><a href="#调试实例" class="headerlink" title="调试实例"></a>调试实例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add_range</span><span class="params">(<span class="keyword">int</span> low, <span class="keyword">int</span> high)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, sum;</span><br><span class="line">    <span class="keyword">for</span> (i = low; i &lt;= high; i++)</span><br><span class="line">    sum = sum + i;</span><br><span class="line">    <span class="keyword">return</span> sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> result[<span class="number">100</span>];</span><br><span class="line">    result[<span class="number">0</span>] = add_range(<span class="number">1</span>, <span class="number">10</span>);</span><br><span class="line">    result[<span class="number">1</span>] = add_range(<span class="number">1</span>, <span class="number">100</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"result[0]=%d\nresult[1]=%d\n"</span>, result[<span class="number">0</span>],result[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序运行的结果：result[0]在一些操作系统和平台上的结果是正确的，result[1]则始终是错误的</p>
+<h1 id="开始调试"><a href="#开始调试" class="headerlink" title="开始调试"></a>开始调试</h1><p>编译时加上 -g 选项，生成的可执行文件才能用gdb进行源码级调试<br><img src="/images/gdb/gdb1.jpg" alt="xushousi gdb"><br>-g 选项的作用是在可执行文件中加入源代码信息，比如可执行文件中第几条机器指令对应源代码的第几行，并不是把整个源文件嵌入到可执行文件中，所以在调试时必须保证gdb能找到源文件</p>
+<p>在此页面下输入help可查看命令的类别， 使用 help 类别 命令可查看某一类别中有哪些命令</p>
+<p>在files类别下有个list命令，可将源代码列出<br><img src="/images/gdb/gdb_list_command.jpg" alt="xushousi gdb"><br>list命令一次列10行，再次输入会继续从11行列出源代码，而使用回车将重复上一个命令</p>
+<p>start命令开始调试， next命令（简写为n）控制语句一条一条执行<br><img src="/images/gdb/gdb_start_next_command.jpg" alt="xushousi gdb"></p>
+<p>这样一直使用next命令调试看不出问题，因为使用next我们只会运行本函数中的语句，而使用step命令(简写为s)可以进入到某一函数中去跟踪执行<br>下面我们重新运行程序，使用step命令进入add_range函数中</p>
+<p><img src="/images/gdb/gdb_step_command.jpg" alt="xushousi gdb"></p>
+<p>在函数中有几种方法查看状态，backtrace命令(简写为bt)可以查看函数调用的栈帧:<br><img src="/images/gdb/gdb_backtrace_command.jpg" alt="xushousi gdb"><br>可见当前的 add_range 函数是被 main 函数调用的，main 传进来的参数是 low=1， high=10<br>main 函数的栈帧编号为1， add_range 函数的栈帧编号为0。<br>可以用 info 命令(简写为i)查看add_range函数局部变量的值<br><img src="/images/gdb/gdb_info_command.jpg" alt="xushousi gdb"><br>此时我们可以看得出来，sum的值被随机初始化成一个值了，这就是问题所在:没有赋初始值。但我们继续调试下去。<br>如果想查看 main 函数当前局部变量的值也可以做到，先用 frame 命令(简写为f)选择 1 号栈帧然后再查看局部变量<br><img src="/images/gdb/gdb_frame_command.jpg" alt="xushousi gdb"><br>result数组中有很多元素具有杂乱无章的值，我们未经初始化的局部变量具有不确定的值。<br>使用s或n往下走几步， 使用 print 命令(简写为p) 可以打印某一变量的值<br><img src="/images/gdb/gdb_print_command.jpg" alt="xushousi gdb"><br>这里的$2表示gdb保存着这些中间结果，$后面的编号从1开始，会自动增长。<br>我们可以看到sum的值会相应减少，这样继续跟下去没有意义了，可以用finish命令让程序一直运行到从当前函数返回为止<br><img src="/images/gdb/gdb_finish_command.jpg" alt="xushousi gdb"><br>返回值是-7881，当前正准备执行复制操作，用 s 或者 n 命令向下运行，然后查看 result 数组可以发现第一个值-7781确实赋给了result数组的第0个元素<br>然后使用 s 命令进入第二次add_range调用，进入之后首先查看参数和局部变量<br><img src="/images/gdb/gdb_second_step_command.jpg" alt="xushousi gdb"><br>由于局部变量i和sum没初始化，所以具有不确定的值，又由于两次调用是挨着的， i和sum正好取了上次调用时的值(但我们应该始终牢记：局部变量不初始化则初值是不确定的)<br>错误的原因我们在第一次循环的时候就已经知道了，这里我们可以 set 命令设置sum的值，看一下还有没有其他bug<br><img src="/images/gdb/gdb_set_command.jpg" alt="xushousi gdb"><br>结果正确。修改变量的值除了用 set 命令之外也可以用 print 命令，因为 print 命令后面跟的是表达式，而我们知道赋值也是表达式，所以也可以用print命令修改变量的值</p>
+<h1 id="基本命令总结"><a href="#基本命令总结" class="headerlink" title="基本命令总结"></a>基本命令总结</h1><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>backtrace(或bt)</td>
+<td>查看各级函数调用及参数</td>
+</tr>
+<tr>
+<td>finish</td>
+<td>连续运行到当前函数执行返回为止，然后停下来等待命令</td>
+</tr>
+<tr>
+<td>frame(或 f) 帧编号</td>
+<td>选择栈帧</td>
+</tr>
+<tr>
+<td>info(或 i) locals</td>
+<td>查看当前栈帧局部变量的值</td>
+</tr>
+<tr>
+<td>list(或 l)</td>
+<td>列出源代码，接着上次的位置往下列，每次列10行</td>
+</tr>
+<tr>
+<td>list 行号</td>
+<td>列出从第几行开始的源代码</td>
+</tr>
+<tr>
+<td>list 函数名</td>
+<td>列出某个函数的源代码</td>
+</tr>
+<tr>
+<td>next(或n)</td>
+<td>执行下一条语句</td>
+</tr>
+<tr>
+<td>print(或p)</td>
+<td>打印表达式的值，通过表达式可以修改变量的值或者调用函数</td>
+</tr>
+<tr>
+<td>quit(或q)</td>
+<td>退出gdb调试环境</td>
+</tr>
+<tr>
+<td>set var</td>
+<td>修改变量的值</td>
+</tr>
+<tr>
+<td>start</td>
+<td>开始执行程序，停在main函数第一行语句前面等待命令</td>
+</tr>
+<tr>
+<td>step(或s)</td>
+<td>执行下一行语句，如果有函数调用则进入到函数中</td>
+</tr>
+</tbody></table>
+
+	
+	</div>
+  <a type="button" href="/2020/03/28/C/debugg_tool_gdb1/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2020/03/22/C/C语言实现简单剪刀石头布/" title="实现及关键表达式理解">C语言实现简单剪刀石头布</a>
 		</h3>
 		</div>
@@ -234,7 +330,7 @@ var _hmt = _hmt || [];
 		<h4>分类</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/C/">C<span>1</span></a></li>
+			<li><a href="/categories/C/">C<span>2</span></a></li>
 		
 			<li><a href="/categories/slogan/">slogan<span>1</span></a></li>
 		
@@ -247,9 +343,9 @@ var _hmt = _hmt || [];
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/C/">C<span>1</span></a></li>
-		
 			<li><a href="/tags/slogan/">slogan<span>1</span></a></li>
+		
+			<li><a href="/tags/C/">C<span>2</span></a></li>
 		
 		 
 		</ul>
@@ -261,6 +357,10 @@ var _hmt = _hmt || [];
 <div class="widget">
   <h4>最新文章</h4>
   <ul class="entry list-unstyled">
+    
+      <li>
+        <a href="/2020/03/28/C/debugg_tool_gdb1/"  title="本文来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（1）</a>
+      </li>
     
       <li>
         <a href="/2020/03/22/C/C语言实现简单剪刀石头布/"  title="实现及关键表达式理解" ><i class="fa fa-file-o"></i>C语言实现简单剪刀石头布</a>
