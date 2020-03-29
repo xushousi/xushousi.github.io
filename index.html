@@ -133,6 +133,88 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2020/03/29/C/debugg_tool_gdb2/" title="本文来自 《Linux_c编程一站式学习》">调试工具gdb（2）</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2020-03-29  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="调试实例"><a href="#调试实例" class="headerlink" title="调试实例"></a>调试实例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>, i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">char</span> input[<span class="number">5</span>];</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%s"</span>, input);</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; input[i] != <span class="string">'\0'</span>; i++)</span><br><span class="line">            sum = sum*<span class="number">10</span> + input[i] - <span class="string">'0'</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"input=%d\n"</span>, sum);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序运行的结果：<br><img src="/images/gdb/gdb2_result.jpg" alt="gdb"><br>可以看出第二次的结果是错误的</p>
+<h1 id="开始调试"><a href="#开始调试" class="headerlink" title="开始调试"></a>开始调试</h1><p>我们可以使用display命令使的每次停下来的时候都显示某个变量的值，在这里，我们显示sum的值。<br><img src="/images/gdb/gdb2_display_command.jpg" alt="gdb"><br>使用next命令往下走，可以看出每次都会显示sum的值。如果不想显示，可以使用undisplay命令取消跟踪显示，sum的编号为1，可以用 undisplay 1 命令取消<br><img src="/images/gdb/gdb2_undisplay_command.jpg" alt="gdb"><br>使用 break 命令(简写为 b) 设置断点，在这里我们设置在第 8 行<br><img src="/images/gdb/gdb2_break_command.jpg" alt="gdb"><br>break 命令的参数也可以是函数名，表示在某个函数开头设置断点。<br>现在用 continue 命令(简写为 c)连续运行而非单步运行，程序到达断点会自动停下来<br><img src="/images/gdb/gdb2_continue_command.jpg" alt="gdb"><br>然后我们继续往下运行，输入新的字符串准备转换<br><img src="/images/gdb/gdb2_debugger_result.jpg" alt="gdb"><br>可以看到问题所在了，新的转换应该再次从0开始累加，而 sum 现在已经 123 了，原因在于新的循环没有把 sum 归零<br>可见断点有助于快速跳过没有问题的代码，然后在有问题的代码上慢慢走慢慢分析 ，“断点加单步”是使用调试器的基本方法<br>至于应该在哪里设置断点，怎么知道哪些代码可以跳过，也要通过对错误现象的分析和假设来确定<br>一次调试可以设置多个断点，用 info 命令(简写为 i) 可以查看已经设置的断点<br><img src="/images/gdb/gdb2_info_breakpoints_command.jpg" alt="gdb"><br>每个断点都有一个编号，可以用编号指定删除某个断点，而有时候一个断点暂时不用可以禁掉而不用删除，之后可以重新启用<br><img src="/images/gdb/gdb2_delete_disable_enable_breakpoints_command.jpg" alt="gdb"><br>断点还可以设置成在满足某个条件时才激活，如下。然后使用 run命令(简写为 r)重新从程序开头连续运行<br><img src="/images/gdb/gdb2_break_condition_command.jpg" alt="gdb"><br>可以看出第一次执行 scanf 之前没有中断，第二次就中断了</p>
+<h1 id="基本命令总结"><a href="#基本命令总结" class="headerlink" title="基本命令总结"></a>基本命令总结</h1><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>break(或 b) 行号</td>
+<td>在某一行设置断点</td>
+</tr>
+<tr>
+<td>break 函数名</td>
+<td>在某个函数开头设置断点</td>
+</tr>
+<tr>
+<td>break … if …</td>
+<td>设置条件断点</td>
+</tr>
+<tr>
+<td>continue(或 c)</td>
+<td>从当前位置开始连续运行程序，到达断点时停下</td>
+</tr>
+<tr>
+<td>delete breakpoints 断点号</td>
+<td>删除断点</td>
+</tr>
+<tr>
+<td>display 变量名</td>
+<td>跟踪查看某个变量，每次停下都显示它的值</td>
+</tr>
+<tr>
+<td>disable breakpoints 断点号</td>
+<td>禁用断点</td>
+</tr>
+<tr>
+<td>enable 断点号</td>
+<td>启用断点</td>
+</tr>
+<tr>
+<td>info (或 i) breakpoints</td>
+<td>查看当前设置的断点信息</td>
+</tr>
+<tr>
+<td>run (或 r)</td>
+<td>从头开始连续运行程序</td>
+</tr>
+<tr>
+<td>undisplay 跟踪显示号</td>
+<td>取消跟踪显示</td>
+</tr>
+</tbody></table>
+
+	
+	</div>
+  <a type="button" href="/2020/03/29/C/debugg_tool_gdb2/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2020/03/28/C/debugg_tool_gdb1/" title="本文来自 《Linux_c编程一站式学习》">调试工具gdb（1）</a>
 		</h3>
 		</div>
@@ -330,7 +412,7 @@ var _hmt = _hmt || [];
 		<h4>分类</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/C/">C<span>2</span></a></li>
+			<li><a href="/categories/C/">C<span>3</span></a></li>
 		
 			<li><a href="/categories/slogan/">slogan<span>1</span></a></li>
 		
@@ -345,7 +427,7 @@ var _hmt = _hmt || [];
 		
 			<li><a href="/tags/slogan/">slogan<span>1</span></a></li>
 		
-			<li><a href="/tags/C/">C<span>2</span></a></li>
+			<li><a href="/tags/C/">C<span>3</span></a></li>
 		
 		 
 		</ul>
@@ -357,6 +439,10 @@ var _hmt = _hmt || [];
 <div class="widget">
   <h4>最新文章</h4>
   <ul class="entry list-unstyled">
+    
+      <li>
+        <a href="/2020/03/29/C/debugg_tool_gdb2/"  title="本文来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（2）</a>
+      </li>
     
       <li>
         <a href="/2020/03/28/C/debugg_tool_gdb1/"  title="本文来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（1）</a>
