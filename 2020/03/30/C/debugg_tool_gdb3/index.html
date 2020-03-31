@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>调试工具gdb（2） | xushousi</title>
+  <title>调试工具gdb(3) | xushousi</title>
   <meta name="author" content="xushousi">
   
   <meta name="description" content="本文主要来自 《Linux_c编程一站式学习》">
@@ -14,7 +14,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="调试工具gdb（2）"/>
+  <meta property="og:title" content="调试工具gdb(3)"/>
   <meta property="og:site_name" content="xushousi"/>
 
   
@@ -112,7 +112,7 @@ var _hmt = _hmt || [];
 
 	
 		<div class="page-header">
-			<h1> 调试工具gdb（2）</h1>
+			<h1> 调试工具gdb(3)</h1>
 		</div>
 	
 
@@ -133,9 +133,9 @@ var _hmt = _hmt || [];
 		 </div> <!-- alert -->
 	  		
 
-	  <h1 id="调试实例"><a href="#调试实例" class="headerlink" title="调试实例"></a>调试实例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>, i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">char</span> input[<span class="number">5</span>];</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%s"</span>, input);</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; input[i] != <span class="string">'\0'</span>; i++)</span><br><span class="line">            sum = sum*<span class="number">10</span> + input[i] - <span class="string">'0'</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"input=%d\n"</span>, sum);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>程序运行的结果：<br><img src="/images/gdb/gdb2_result.jpg" alt="gdb"><br>可以看出第二次的结果是错误的</p>
-<h1 id="开始调试"><a href="#开始调试" class="headerlink" title="开始调试"></a>开始调试</h1><p>我们可以使用display命令使的每次停下来的时候都显示某个变量的值，在这里，我们显示sum的值。<br><img src="/images/gdb/gdb2_display_command.jpg" alt="gdb"><br>使用next命令往下走，可以看出每次都会显示sum的值。如果不想显示，可以使用undisplay命令取消跟踪显示，sum的编号为1，可以用 undisplay 1 命令取消<br><img src="/images/gdb/gdb2_undisplay_command.jpg" alt="gdb"><br>使用 break 命令(简写为 b) 设置断点，在这里我们设置在第 8 行<br><img src="/images/gdb/gdb2_break_command.jpg" alt="gdb"><br>break 命令的参数也可以是函数名，表示在某个函数开头设置断点。<br>现在用 continue 命令(简写为 c)连续运行而非单步运行，程序到达断点会自动停下来<br><img src="/images/gdb/gdb2_continue_command.jpg" alt="gdb"><br>然后我们继续往下运行，输入新的字符串准备转换<br><img src="/images/gdb/gdb2_debugger_result.jpg" alt="gdb"><br>可以看到问题所在了，新的转换应该再次从0开始累加，而 sum 现在已经 123 了，原因在于新的循环没有把 sum 归零<br>可见断点有助于快速跳过没有问题的代码，然后在有问题的代码上慢慢走慢慢分析 ，“断点加单步”是使用调试器的基本方法<br>至于应该在哪里设置断点，怎么知道哪些代码可以跳过，也要通过对错误现象的分析和假设来确定<br>一次调试可以设置多个断点，用 info 命令(简写为 i) 可以查看已经设置的断点<br><img src="/images/gdb/gdb2_info_breakpoints_command.jpg" alt="gdb"><br>每个断点都有一个编号，可以用编号指定删除某个断点，而有时候一个断点暂时不用可以禁掉而不用删除，之后可以重新启用<br><img src="/images/gdb/gdb2_delete_disable_enable_breakpoints_command.jpg" alt="gdb"><br>断点还可以设置成在满足某个条件时才激活，如下。然后使用 run命令(简写为 r)重新从程序开头连续运行<br><img src="/images/gdb/gdb2_break_condition_command.jpg" alt="gdb"><br>可以看出第一次执行 scanf 之前没有中断，第二次就中断了</p>
+	  <h1 id="调试实例"><a href="#调试实例" class="headerlink" title="调试实例"></a>调试实例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>, i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">char</span> input[<span class="number">5</span>];</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        sum = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%s"</span>, input);</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; input[i] != <span class="string">'\0'</span>; i++)</span><br><span class="line">            sum = sum*<span class="number">10</span> + input[i] - <span class="string">'0'</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"input=%d\n"</span>, sum);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据 调试工具gdb(2) 可以知道需要在循环开头加上 sum=0； 可以解决问题。<br>但使用 scanf 函数依然十分危险，即使修正了这个Bug也还存在很多问题。比如输入的字符串如果超长，而数组访问越界是不会检查的，所以scanf会写出界。如下：<br><img src="/images/gdb/gdb3_result.jpg" alt="gdb"><br>下面调试一下 12307 这个诡异的结果是怎么出来的</p>
+<h1 id="开始调试"><a href="#开始调试" class="headerlink" title="开始调试"></a>开始调试</h1><p><img src="/images/gdb/gdb3_begin.jpg" alt="gdb"><br>input 数组只有 5 个元素，写出界的是 scanf 自动添加的’\n’,使用x命令查看会更加清晰<br><img src="/images/gdb/gdb3_x_command.jpg" alt="gdb"><br>x 命令打印指定存储单元的内容。 7b是打印格式， b表示每个字节一组， 7表示打印7组，从 input 数组的第一个字节开始连续打印7个字节<br>前 5 个字节是 input 数组的存储单元，打印的是十进制ASCII码的 ‘1’ 到 ‘5’, 第 6 个字节是写出界的 ‘\0’。<br>根据运行结果，前 4 个字符转成数字都没错，第 5 个错了，也就是 i 从 0 到 3 的循环都没错，所以我们设置一个条件断点从 i 等于 4 开始单步调试<br><img src="/images/gdb/gdb3_break_condition_command.jpg" alt="gdb"><br>目前 sum 是 1234 是没错的，根据运行结果是 123407 我们知道即将进行的这步计算肯定要出错，算出来应该12340，<br>那就是说input[4]肯定不是‘5’了，但实际这个推理是不严谨的：<br><img src="/images/gdb/gdb3_info.jpg" alt="gdb"><br>input[4]中是53，就是十进制ASCII码的‘5’。产生 123407 还有另外一个可能，就是在下一次循环中 123450不是加上而是减去一个数得到 123407<br>而出现下一次循环的原因在于循环控制条件是 input[i]!=’\0’，并且本来应该出现0的位置莫名其妙地表成了4，因此循环不会结束。<br>继续单步：<br><img src="/images/gdb/gdb3_continue_next.jpg" alt="gdb"><br>可以看到进入下一次循环，原来的 4 又莫名其妙变成了 5，这个暂时解释不了，但 123407 这个结果可以解释了：<br>表达式 sum*10 + input[i] = ‘0’ 此时等于 12345*10 + 0x05 - 0x30, 所以结果是 123407<br>但 input[4] 后面那个字节到时是什么时候变的？可以用观察点(Watchpoint)来跟踪。<br>断点是当程序到某一代码行时中断，而观察点是当程序访问某个存储单元时中断，如果我们不知道某个存储单元是在哪里被改动的，这时观察点尤其有用。<br>下面删除原来设的断点，从头执行程序，重复上次的输入，用watch命令设置观察点，跟踪input[4]后面那个字节(可以用input[5]表示，虽然这是访问越界)：<br><img src="/images/gdb/gdb3_watchpoints_command.jpg" alt="gdb"><br>可以看出，每次都是回到 for 循环开头的时候改变了 input[5] 的值，而且是每次加 1，而循环变量 i 正是在每次回到循环开头之前加 1，原来 input[5] 就是变量 i 的存储单元。换句话说， i 的存储单元是紧跟在 input 数组后面的</p>
 <h1 id="基本命令总结"><a href="#基本命令总结" class="headerlink" title="基本命令总结"></a>基本命令总结</h1><table>
 <thead>
 <tr>
@@ -144,48 +144,16 @@ var _hmt = _hmt || [];
 </tr>
 </thead>
 <tbody><tr>
-<td>break(或 b) 行号</td>
-<td>在某一行设置断点</td>
+<td>watch</td>
+<td>设置观察点</td>
 </tr>
 <tr>
-<td>break 函数名</td>
-<td>在某个函数开头设置断点</td>
+<td>info(或 i) watchpoints</td>
+<td>查看当前设置了哪些观察点</td>
 </tr>
 <tr>
-<td>break … if …</td>
-<td>设置条件断点</td>
-</tr>
-<tr>
-<td>continue(或 c)</td>
-<td>从当前位置开始连续运行程序，到达断点时停下</td>
-</tr>
-<tr>
-<td>delete breakpoints 断点号</td>
-<td>删除断点</td>
-</tr>
-<tr>
-<td>display 变量名</td>
-<td>跟踪查看某个变量，每次停下都显示它的值</td>
-</tr>
-<tr>
-<td>disable breakpoints 断点号</td>
-<td>禁用断点</td>
-</tr>
-<tr>
-<td>enable 断点号</td>
-<td>启用断点</td>
-</tr>
-<tr>
-<td>info (或 i) breakpoints</td>
-<td>查看当前设置的断点信息</td>
-</tr>
-<tr>
-<td>run (或 r)</td>
-<td>从头开始连续运行程序</td>
-</tr>
-<tr>
-<td>undisplay 跟踪显示号</td>
-<td>取消跟踪显示</td>
+<td>x</td>
+<td>从某个位置开始打印存储单元的内容，全部当成字节来看，而不区分哪个字节属于哪个变量</td>
 </tr>
 </tbody></table>
 	  
@@ -197,13 +165,12 @@ var _hmt = _hmt || [];
 
     
     
-    <a href="/2020/03/30/C/debugg_tool_gdb3/" type="button" class="btn btn-default"><i
-                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>上一页</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
     
-    <a href="/2020/03/28/C/debugg_tool_gdb1/" type="button" class="btn btn-default ">下一页<i
+    <a href="/2020/03/29/C/debugg_tool_gdb2/" type="button" class="btn btn-default ">下一页<i
                 class="fa fa-arrow-circle-o-right"></i></a>
     
 
@@ -232,7 +199,7 @@ var _hmt = _hmt || [];
 	
 	<div class="meta-widget">
 	<i class="fa fa-clock-o"></i>
-	2020-03-29 
+	2020-03-30 
 	</div>
 	
 

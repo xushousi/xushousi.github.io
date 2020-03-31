@@ -133,7 +133,57 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2020/03/29/C/debugg_tool_gdb2/" title="本文来自 《Linux_c编程一站式学习》">调试工具gdb（2）</a>
+			<a href="/2020/03/30/C/debugg_tool_gdb3/" title="本文主要来自 《Linux_c编程一站式学习》">调试工具gdb(3)</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2020-03-30  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="调试实例"><a href="#调试实例" class="headerlink" title="调试实例"></a>调试实例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>, i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">char</span> input[<span class="number">5</span>];</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        sum = <span class="number">0</span>;</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%s"</span>, input);</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; input[i] != <span class="string">'\0'</span>; i++)</span><br><span class="line">            sum = sum*<span class="number">10</span> + input[i] - <span class="string">'0'</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"input=%d\n"</span>, sum);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据 调试工具gdb(2) 可以知道需要在循环开头加上 sum=0； 可以解决问题。<br>但使用 scanf 函数依然十分危险，即使修正了这个Bug也还存在很多问题。比如输入的字符串如果超长，而数组访问越界是不会检查的，所以scanf会写出界。如下：<br><img src="/images/gdb/gdb3_result.jpg" alt="gdb"><br>下面调试一下 12307 这个诡异的结果是怎么出来的</p>
+<h1 id="开始调试"><a href="#开始调试" class="headerlink" title="开始调试"></a>开始调试</h1><p><img src="/images/gdb/gdb3_begin.jpg" alt="gdb"><br>input 数组只有 5 个元素，写出界的是 scanf 自动添加的’\n’,使用x命令查看会更加清晰<br><img src="/images/gdb/gdb3_x_command.jpg" alt="gdb"><br>x 命令打印指定存储单元的内容。 7b是打印格式， b表示每个字节一组， 7表示打印7组，从 input 数组的第一个字节开始连续打印7个字节<br>前 5 个字节是 input 数组的存储单元，打印的是十进制ASCII码的 ‘1’ 到 ‘5’, 第 6 个字节是写出界的 ‘\0’。<br>根据运行结果，前 4 个字符转成数字都没错，第 5 个错了，也就是 i 从 0 到 3 的循环都没错，所以我们设置一个条件断点从 i 等于 4 开始单步调试<br><img src="/images/gdb/gdb3_break_condition_command.jpg" alt="gdb"><br>目前 sum 是 1234 是没错的，根据运行结果是 123407 我们知道即将进行的这步计算肯定要出错，算出来应该12340，<br>那就是说input[4]肯定不是‘5’了，但实际这个推理是不严谨的：<br><img src="/images/gdb/gdb3_info.jpg" alt="gdb"><br>input[4]中是53，就是十进制ASCII码的‘5’。产生 123407 还有另外一个可能，就是在下一次循环中 123450不是加上而是减去一个数得到 123407<br>而出现下一次循环的原因在于循环控制条件是 input[i]!=’\0’，并且本来应该出现0的位置莫名其妙地表成了4，因此循环不会结束。<br>继续单步：<br><img src="/images/gdb/gdb3_continue_next.jpg" alt="gdb"><br>可以看到进入下一次循环，原来的 4 又莫名其妙变成了 5，这个暂时解释不了，但 123407 这个结果可以解释了：<br>表达式 sum*10 + input[i] = ‘0’ 此时等于 12345*10 + 0x05 - 0x30, 所以结果是 123407<br>但 input[4] 后面那个字节到时是什么时候变的？可以用观察点(Watchpoint)来跟踪。<br>断点是当程序到某一代码行时中断，而观察点是当程序访问某个存储单元时中断，如果我们不知道某个存储单元是在哪里被改动的，这时观察点尤其有用。<br>下面删除原来设的断点，从头执行程序，重复上次的输入，用watch命令设置观察点，跟踪input[4]后面那个字节(可以用input[5]表示，虽然这是访问越界)：<br><img src="/images/gdb/gdb3_watchpoints_command.jpg" alt="gdb"><br>可以看出，每次都是回到 for 循环开头的时候改变了 input[5] 的值，而且是每次加 1，而循环变量 i 正是在每次回到循环开头之前加 1，原来 input[5] 就是变量 i 的存储单元。换句话说， i 的存储单元是紧跟在 input 数组后面的</p>
+<h1 id="基本命令总结"><a href="#基本命令总结" class="headerlink" title="基本命令总结"></a>基本命令总结</h1><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>watch</td>
+<td>设置观察点</td>
+</tr>
+<tr>
+<td>info(或 i) watchpoints</td>
+<td>查看当前设置了哪些观察点</td>
+</tr>
+<tr>
+<td>x</td>
+<td>从某个位置开始打印存储单元的内容，全部当成字节来看，而不区分哪个字节属于哪个变量</td>
+</tr>
+</tbody></table>
+
+	
+	</div>
+  <a type="button" href="/2020/03/30/C/debugg_tool_gdb3/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2020/03/29/C/debugg_tool_gdb2/" title="本文主要来自 《Linux_c编程一站式学习》">调试工具gdb（2）</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -215,7 +265,7 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2020/03/28/C/debugg_tool_gdb1/" title="本文来自 《Linux_c编程一站式学习》">调试工具gdb（1）</a>
+			<a href="/2020/03/28/C/debugg_tool_gdb1/" title="本文主要来自 《Linux_c编程一站式学习》">调试工具gdb（1）</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -412,7 +462,7 @@ var _hmt = _hmt || [];
 		<h4>分类</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/C/">C<span>3</span></a></li>
+			<li><a href="/categories/C/">C<span>4</span></a></li>
 		
 			<li><a href="/categories/slogan/">slogan<span>1</span></a></li>
 		
@@ -425,9 +475,9 @@ var _hmt = _hmt || [];
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/slogan/">slogan<span>1</span></a></li>
+			<li><a href="/tags/C/">C<span>4</span></a></li>
 		
-			<li><a href="/tags/C/">C<span>3</span></a></li>
+			<li><a href="/tags/slogan/">slogan<span>1</span></a></li>
 		
 		 
 		</ul>
@@ -441,11 +491,15 @@ var _hmt = _hmt || [];
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2020/03/29/C/debugg_tool_gdb2/"  title="本文来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（2）</a>
+        <a href="/2020/03/30/C/debugg_tool_gdb3/"  title="本文主要来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb(3)</a>
       </li>
     
       <li>
-        <a href="/2020/03/28/C/debugg_tool_gdb1/"  title="本文来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（1）</a>
+        <a href="/2020/03/29/C/debugg_tool_gdb2/"  title="本文主要来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（2）</a>
+      </li>
+    
+      <li>
+        <a href="/2020/03/28/C/debugg_tool_gdb1/"  title="本文主要来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（1）</a>
       </li>
     
       <li>
