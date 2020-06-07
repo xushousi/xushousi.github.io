@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>Springboot的原理(一)：启动流程 | xushousi</title>
+  <title>Springboot原理(一)：启动流程 | xushousi</title>
   <meta name="author" content="xushousi">
   
   <meta name="description" content="本文使用 Springboot 的版本为2.0.1.RELEASE">
@@ -14,7 +14,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="Springboot的原理(一)：启动流程"/>
+  <meta property="og:title" content="Springboot原理(一)：启动流程"/>
   <meta property="og:site_name" content="xushousi"/>
 
   
@@ -112,7 +112,7 @@ var _hmt = _hmt || [];
 
 	
 		<div class="page-header">
-			<h1> Springboot的原理(一)：启动流程</h1>
+			<h1> Springboot原理(一)：启动流程</h1>
 		</div>
 	
 
@@ -133,8 +133,7 @@ var _hmt = _hmt || [];
 		 </div> <!-- alert -->
 	  		
 
-	  <p>几个重要的事件回调机制<br>配置在 META-INF/spring.factories<br>ApplicationContextInitializer<br>SpringApplicationRunListener<br>// 只需要放在 ioc 容器中<br>ApplicationRunner<br>CommandLineRunner</p>
-<p>从 main 中的 run 方法开始，可以找到<br><img src="/images/springboot/springboot_a_run.jpg" alt="xushousi_springboot"><br>可以发现，Springboot启动有两步：</p>
+	  <p>从 main 中的 run 方法开始，可以找到<br><img src="/images/springboot/springboot_a_run.jpg" alt="xushousi_springboot"><br>可以发现，Springboot启动有两步：</p>
 <ul>
 <li>创建 SpringApplication 对象<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先调用重载构造方法</span></span><br><span class="line"><span class="keyword">this</span>((ResourceLoader)<span class="keyword">null</span>, primarySources)</span><br><span class="line"><span class="comment">//在重载构造方法中初始化 SpringApplication 对象所需参数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">SpringApplication</span><span class="params">(ResourceLoader resourceLoader, Class&lt;?&gt;... primarySources)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.sources = <span class="keyword">new</span> LinkedHashSet();</span><br><span class="line">        <span class="keyword">this</span>.bannerMode = Mode.CONSOLE;</span><br><span class="line">        <span class="keyword">this</span>.logStartupInfo = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.addCommandLineProperties = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.headless = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.registerShutdownHook = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.additionalProfiles = <span class="keyword">new</span> HashSet();</span><br><span class="line">        <span class="keyword">this</span>.resourceLoader = resourceLoader;</span><br><span class="line">        Assert.notNull(primarySources, <span class="string">"PrimarySources must not be null"</span>);</span><br><span class="line">        <span class="comment">// 保存主配置类</span></span><br><span class="line">        <span class="keyword">this</span>.primarySources = <span class="keyword">new</span> LinkedHashSet(Arrays.asList(primarySources));</span><br><span class="line">        <span class="comment">// 通过判断项目中是否全部包含</span></span><br><span class="line">        <span class="comment">// "javax.servlet.Servlet", </span></span><br><span class="line">        <span class="comment">// "org.springframework.web.context.ConfigurableWebApplicationContext"</span></span><br><span class="line">        <span class="comment">// 这两个类，来判断当前是否是一个 web 应用</span></span><br><span class="line">        <span class="keyword">this</span>.webApplicationType = <span class="keyword">this</span>.deduceWebApplicationType();</span><br><span class="line">        <span class="comment">// 从类路径下找到 META-INF/spring.factories 配置的所有 ApplicationContextInitializer;然后保存起来</span></span><br><span class="line">        <span class="keyword">this</span>.setInitializers(<span class="keyword">this</span>.getSpringFactoriesInstances(ApplicationContextInitializer<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">        <span class="comment">// 从类路径下找到 META-INF/spring.factories 配置的所有 ApplicationListener</span></span><br><span class="line">        <span class="keyword">this</span>.setListeners(<span class="keyword">this</span>.getSpringFactoriesInstances(ApplicationListener<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">        <span class="comment">// 从多个配置类中找到有 main 方法的主配置类</span></span><br><span class="line">        <span class="keyword">this</span>.mainApplicationClass = <span class="keyword">this</span>.deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/springboot/springboot_b_initializer.jpg" alt="xushousi_springboot"><br>setListeners 中的 ApplicationListener<br><img src="/images/springboot/springboot_c_listener.jpg" alt="xushousi_springboot"></li>
@@ -151,7 +150,8 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
 
     
     
-    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>上一页</a>
+    <a href="/2020/06/03/springboot/Springboot原理(二)：事件监听机制/" type="button" class="btn btn-default"><i
+                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
@@ -196,7 +196,7 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/Springboot/">Springboot<span>1</span></a></li>
+    <li><a href="/categories/Springboot/">Springboot<span>3</span></a></li>
   </li>
 
     </ul>
@@ -209,7 +209,7 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/springboot/">springboot<span>1</span></a></li>
+  <li><a href="/tags/Springboot/">Springboot<span>3</span></a></li>
     </ul>
 	</div>
 		

@@ -133,7 +133,106 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2020/06/01/springboot/Springboot的原理(一)：启动流程/" title="本文使用 Springboot 的版本为2.0.1.RELEASE">Springboot的原理(一)：启动流程</a>
+			<a href="/2020/06/04/springboot/Springboot原理(三)：自定义starter/" title="本文使用 Springboot 的版本为2.0.1.RELEASE">Springboot原理(三)：自定义starter</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2020-06-04  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="编写思路"><a href="#编写思路" class="headerlink" title="编写思路"></a>编写思路</h1><ul>
+<li><p>编写自动配置<br>以 WebMvcAutoConfiguration 及其内部类 WebMvcAutoConfigurationAdapter 为例<br><img src="/images/springboot/springboot_g_starter1.jpg" alt="xushousi_springboot"><br><img src="/images/springboot/springboot_g_starter2.jpg" alt="xushousi_springboot"><br>可以看出，编写自动配置主要注意以下注解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 类级别注解</span></span><br><span class="line"><span class="meta">@Configuration</span>                  <span class="comment">// 指定这个类是一个配置类</span></span><br><span class="line"><span class="meta">@ConditionalOnXXX</span>               <span class="comment">// 在指定条件成立的情况下自动配置类生效</span></span><br><span class="line"><span class="meta">@AutoConfigureAfter</span>             <span class="comment">// 指定自动配置类的顺序</span></span><br><span class="line"><span class="meta">@EnableConfigurationProperties</span>  <span class="comment">// 让 xxxProperties 生效加入容器中，例: WebMvcProperties</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(prefix = <span class="string">"spring.mvc"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WebMvcProperties</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@ConfigurationProperties</span> 结合相关的 xxxProperties 类来绑定相关的配置</span><br><span class="line"></span><br><span class="line"><span class="comment">// 方法级别注解</span></span><br><span class="line"><span class="meta">@Bean</span>   <span class="comment">//给容器中添加组件</span></span><br><span class="line"></span><br><span class="line">最后，如果想要自动配置类被加载，需要将其配置在 META-INF/spring.factories 目录下，形如:</span><br><span class="line">org.springframework.boot.autoconfigure.EnableAutoConfiguration=\</span><br><span class="line">org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编写模式<br>一般来说，自定义starter会编写两个模块： 启动器模块跟自动配置模块<br>启动器模块只用来做依赖导入，自动配置模块才真正的功能实现，启动器模块依赖自动配置模块，使用时只需要引入启动器模块</p>
+</li>
+<li><p>命名规约<br>官方命名空间： spring-boot-starter-模块名，如： spring-boot-starter-web<br>自定义命名空间： 模块名-spring-boot-starter，如： mybatis-spring-boot-starter</p>
+</li>
+</ul>
+<h1 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h1><p>首先创建工程，结构如图<br><img src="/images/springboot/springboot_g_starter3.jpg" alt="xushousi_springboot"><br>其中，xushousi-spring-boot-starter是启动器模块，xushousi-spring-boot-starter-autoconfigurer是自动配置模块</p>
+<ul>
+<li><p>启动器模块中没有代码，只需要在pom.xml引入自动配置模块</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;!--启动器--&gt;</span><br><span class="line">&lt;dependencies&gt;</span><br><span class="line">    &lt;!--引入自动配置模块--&gt;</span><br><span class="line">    &lt;dependency&gt;</span><br><span class="line">        &lt;groupId&gt;com.xushousi&lt;&#x2F;groupId&gt;</span><br><span class="line">        &lt;artifactId&gt;xushousi-spring-boot-starter-autoconfigurer&lt;&#x2F;artifactId&gt;</span><br><span class="line">        &lt;version&gt;0.0.1-SNAPSHOT&lt;&#x2F;version&gt;</span><br><span class="line">    &lt;&#x2F;dependency&gt;</span><br><span class="line">&lt;&#x2F;dependencies&gt;</span><br></pre></td></tr></table></figure>
+<p>最终目录结构如下<br><img src="/images/springboot/springboot_g_starter4.jpg" alt="xushousi_springboot"></p>
+</li>
+<li><p>自动配置模块,需要引入spring-boot-starter依赖</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependencies&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;spring-boot-starter&lt;&#x2F;artifactId&gt;</span><br><span class="line">	&lt;&#x2F;dependency&gt;</span><br><span class="line">&lt;&#x2F;dependencies&gt;</span><br></pre></td></tr></table></figure>
+<p>新建service</p>
+<figure class="highlight plain"><figcaption><span>lang: java</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public class HelloService &#123;</span><br><span class="line"></span><br><span class="line">    private HelloProperties helloProperties;</span><br><span class="line"></span><br><span class="line">    public HelloProperties getHelloProperties() &#123;</span><br><span class="line">        return helloProperties;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void setHelloProperties(HelloProperties helloProperties) &#123;</span><br><span class="line">        this.helloProperties &#x3D; helloProperties;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public String hello(String name)&#123;</span><br><span class="line">        return helloProperties.getPrefix() + &quot;-&quot; + name + &quot;-&quot; + helloProperties.getSuffix();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>新建对应的Properties类</p>
+<figure class="highlight plain"><figcaption><span>lang: java</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">@ConfigurationProperties(prefix &#x3D; &quot;xushousi.hello&quot;)</span><br><span class="line">public class HelloProperties &#123;</span><br><span class="line">    private String prefix;</span><br><span class="line">    private String suffix;</span><br><span class="line"></span><br><span class="line">    public String getPrefix() &#123;</span><br><span class="line">        return prefix;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void setPrefix(String prefix) &#123;</span><br><span class="line">        this.prefix &#x3D; prefix;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public String getSuffix() &#123;</span><br><span class="line">        return suffix;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void setSuffix(String suffix) &#123;</span><br><span class="line">        this.suffix &#x3D; suffix;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>新建自动配置类</p>
+<figure class="highlight plain"><figcaption><span>lang: java</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Configuration</span><br><span class="line">@ConditionalOnWebApplication  &#x2F;&#x2F; web 应用才生效</span><br><span class="line">@EnableConfigurationProperties(HelloProperties.class)</span><br><span class="line">public class HelloServiceAutoConfiguration &#123;</span><br><span class="line"></span><br><span class="line">    @Autowired</span><br><span class="line">    private HelloProperties helloProperties;</span><br><span class="line"></span><br><span class="line">    @Bean</span><br><span class="line">    public HelloService helloService()&#123;</span><br><span class="line">        HelloService helloService &#x3D; new HelloService();</span><br><span class="line">        helloService.setHelloProperties(helloProperties);</span><br><span class="line">        return helloService;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在类路径下配置/META-INF/spring.factories，将自动配置类配置进去</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">org.springframework.boot.autoconfigure.EnableAutoConfiguration&#x3D;\</span><br><span class="line">com.xushousi.HelloServiceAutoConfiguration</span><br></pre></td></tr></table></figure>
+<p>最终目录结构如下<br><img src="/images/springboot/springboot_g_starter5.jpg" alt="xushousi_springboot"></p>
+</li>
+<li><p>然后，将这两个模块安装到 maven 仓库中，因为启动器模块依赖自动配置模块，所以先安装自动配置模块<br><img src="/images/springboot/springboot_g_starter6.jpg" alt="xushousi_springboot"></p>
+</li>
+<li><p>接下来就可以测试了，新建一个springboot应用，在pom.xml中加入启动器依赖</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;com.xushousi&lt;&#x2F;groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;xushousi-spring-boot-starter&lt;&#x2F;artifactId&gt;</span><br><span class="line">    &lt;version&gt;1.0-SNAPSHOT&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+<p>然后在application.yml中配置属性值<br><img src="/images/springboot/springboot_g_starter7.jpg" alt="xushousi_springboot"><br>新建一个Controller</p>
+<figure class="highlight plain"><figcaption><span>lang: java</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">@RestController</span><br><span class="line">public class HelloController &#123;</span><br><span class="line"></span><br><span class="line">    @Autowired</span><br><span class="line">    HelloService helloService;</span><br><span class="line"></span><br><span class="line">    @GetMapping(&quot;&#x2F;hello&quot;)</span><br><span class="line">    public String hello()&#123;</span><br><span class="line">        return helloService.hello(&quot;xushousi&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后启动应用,在浏览器中访问可以看到效果<br><img src="/images/springboot/springboot_g_starter8.jpg" alt="xushousi_springboot"></p>
+</li>
+</ul>
+
+	
+	</div>
+  <a type="button" href="/2020/06/04/springboot/Springboot原理(三)：自定义starter/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2020/06/03/springboot/Springboot原理(二)：事件监听机制/" title="本文使用 Springboot 的版本为2.0.1.RELEASE">Springboot原理(二)：事件监听机制</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2020-06-03  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="几个重要的事件回调机制"><a href="#几个重要的事件回调机制" class="headerlink" title="几个重要的事件回调机制"></a>几个重要的事件回调机制</h1><p>配置在 META-INF/spring.factories<br>ApplicationContextInitializer<br>SpringApplicationRunListener<br>// 只需要放在 ioc 容器中<br>ApplicationRunner<br>CommandLineRunner</p>
+<ul>
+<li><p>首先我们实现以上四个接口<br>ApplicationContextInitializer<br><img src="/images/springboot/springboot_d_eventListener1.jpg" alt="xushousi_springboot"><br>SpringApplicationRunListener<br>屏幕不够大，截不了全部方法，不过都一样，我只是打印一下执行的方法名而已<br><img src="/images/springboot/springboot_d_eventListener2.jpg" alt="xushousi_springboot"><br>ApplicationRunner<br><img src="/images/springboot/springboot_d_eventListener3.jpg" alt="xushousi_springboot"><br>CommandLineRunner<br><img src="/images/springboot/springboot_d_eventListener4.jpg" alt="xushousi_springboot"></p>
+</li>
+<li><p>使其生效<br>ApplicationRunner 和 CommandLineRunner 在启动流程中我们可以看到它们都是从 ioc 容器中获取出来的<br><img src="/images/springboot/springboot_e_callRunners.jpg" alt="xushousi_springboot"><br>所以我们只需要把它们放到 ioc 容器中,即在类上添加 @Component 注解即可<br>而 ApplicationContextInitializer 和 SpringApplicationRunListener 则需要配置到 类路径下的 META-INF/spring.factories中<br><img src="/images/springboot/springboot_f_metainf.jpg" alt="xushousi_springboot"><br><img src="/images/springboot/springboot_f_springfactories.jpg" alt="xushousi_springboot"></p>
+</li>
+<li><p>最后，启动应用，可以看到控制台打印了信息</p>
+</li>
+</ul>
+
+	
+	</div>
+  <a type="button" href="/2020/06/03/springboot/Springboot原理(二)：事件监听机制/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2020/06/01/springboot/Springboot原理(一)：启动流程/" title="本文使用 Springboot 的版本为2.0.1.RELEASE">Springboot原理(一)：启动流程</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -147,8 +246,7 @@ var _hmt = _hmt || [];
   <div class="row">
 	
 	
-		<p>几个重要的事件回调机制<br>配置在 META-INF/spring.factories<br>ApplicationContextInitializer<br>SpringApplicationRunListener<br>// 只需要放在 ioc 容器中<br>ApplicationRunner<br>CommandLineRunner</p>
-<p>从 main 中的 run 方法开始，可以找到<br><img src="/images/springboot/springboot_a_run.jpg" alt="xushousi_springboot"><br>可以发现，Springboot启动有两步：</p>
+		<p>从 main 中的 run 方法开始，可以找到<br><img src="/images/springboot/springboot_a_run.jpg" alt="xushousi_springboot"><br>可以发现，Springboot启动有两步：</p>
 <ul>
 <li>创建 SpringApplication 对象<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先调用重载构造方法</span></span><br><span class="line"><span class="keyword">this</span>((ResourceLoader)<span class="keyword">null</span>, primarySources)</span><br><span class="line"><span class="comment">//在重载构造方法中初始化 SpringApplication 对象所需参数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">SpringApplication</span><span class="params">(ResourceLoader resourceLoader, Class&lt;?&gt;... primarySources)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.sources = <span class="keyword">new</span> LinkedHashSet();</span><br><span class="line">        <span class="keyword">this</span>.bannerMode = Mode.CONSOLE;</span><br><span class="line">        <span class="keyword">this</span>.logStartupInfo = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.addCommandLineProperties = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.headless = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.registerShutdownHook = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">this</span>.additionalProfiles = <span class="keyword">new</span> HashSet();</span><br><span class="line">        <span class="keyword">this</span>.resourceLoader = resourceLoader;</span><br><span class="line">        Assert.notNull(primarySources, <span class="string">"PrimarySources must not be null"</span>);</span><br><span class="line">        <span class="comment">// 保存主配置类</span></span><br><span class="line">        <span class="keyword">this</span>.primarySources = <span class="keyword">new</span> LinkedHashSet(Arrays.asList(primarySources));</span><br><span class="line">        <span class="comment">// 通过判断项目中是否全部包含</span></span><br><span class="line">        <span class="comment">// "javax.servlet.Servlet", </span></span><br><span class="line">        <span class="comment">// "org.springframework.web.context.ConfigurableWebApplicationContext"</span></span><br><span class="line">        <span class="comment">// 这两个类，来判断当前是否是一个 web 应用</span></span><br><span class="line">        <span class="keyword">this</span>.webApplicationType = <span class="keyword">this</span>.deduceWebApplicationType();</span><br><span class="line">        <span class="comment">// 从类路径下找到 META-INF/spring.factories 配置的所有 ApplicationContextInitializer;然后保存起来</span></span><br><span class="line">        <span class="keyword">this</span>.setInitializers(<span class="keyword">this</span>.getSpringFactoriesInstances(ApplicationContextInitializer<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">        <span class="comment">// 从类路径下找到 META-INF/spring.factories 配置的所有 ApplicationListener</span></span><br><span class="line">        <span class="keyword">this</span>.setListeners(<span class="keyword">this</span>.getSpringFactoriesInstances(ApplicationListener<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">        <span class="comment">// 从多个配置类中找到有 main 方法的主配置类</span></span><br><span class="line">        <span class="keyword">this</span>.mainApplicationClass = <span class="keyword">this</span>.deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/springboot/springboot_b_initializer.jpg" alt="xushousi_springboot"><br>setListeners 中的 ApplicationListener<br><img src="/images/springboot/springboot_c_listener.jpg" alt="xushousi_springboot"></li>
@@ -159,7 +257,7 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
 
 	
 	</div>
-  <a type="button" href="/2020/06/01/springboot/Springboot的原理(一)：启动流程/#more" class="btn btn-default more">阅读此文</a>
+  <a type="button" href="/2020/06/01/springboot/Springboot原理(一)：启动流程/#more" class="btn btn-default more">阅读此文</a>
 </div>
 
 		
@@ -579,7 +677,7 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
 		
 			<li><a href="/categories/Redis/">Redis<span>2</span></a></li>
 		
-			<li><a href="/categories/Springboot/">Springboot<span>1</span></a></li>
+			<li><a href="/categories/Springboot/">Springboot<span>3</span></a></li>
 		
 			<li><a href="/categories/slogan/">slogan<span>1</span></a></li>
 		
@@ -592,11 +690,11 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/C/">C<span>4</span></a></li>
-		
-			<li><a href="/tags/springboot/">springboot<span>1</span></a></li>
+			<li><a href="/tags/Springboot/">Springboot<span>3</span></a></li>
 		
 			<li><a href="/tags/slogan/">slogan<span>1</span></a></li>
+		
+			<li><a href="/tags/C/">C<span>4</span></a></li>
 		
 			<li><a href="/tags/redis/">redis<span>2</span></a></li>
 		
@@ -612,7 +710,15 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2020/06/01/springboot/Springboot的原理(一)：启动流程/"  title="本文使用 Springboot 的版本为2.0.1.RELEASE" ><i class="fa fa-file-o"></i>Springboot的原理(一)：启动流程</a>
+        <a href="/2020/06/04/springboot/Springboot原理(三)：自定义starter/"  title="本文使用 Springboot 的版本为2.0.1.RELEASE" ><i class="fa fa-file-o"></i>Springboot原理(三)：自定义starter</a>
+      </li>
+    
+      <li>
+        <a href="/2020/06/03/springboot/Springboot原理(二)：事件监听机制/"  title="本文使用 Springboot 的版本为2.0.1.RELEASE" ><i class="fa fa-file-o"></i>Springboot原理(二)：事件监听机制</a>
+      </li>
+    
+      <li>
+        <a href="/2020/06/01/springboot/Springboot原理(一)：启动流程/"  title="本文使用 Springboot 的版本为2.0.1.RELEASE" ><i class="fa fa-file-o"></i>Springboot原理(一)：启动流程</a>
       </li>
     
       <li>
@@ -621,14 +727,6 @@ setInitializers 中的 ApplicationContextInitializer:<br><img src="/images/sprin
     
       <li>
         <a href="/2020/04/16/redis/redis-about/" ><i class="fa fa-file-o"></i>Redis（一）：什么是Redis</a>
-      </li>
-    
-      <li>
-        <a href="/2020/03/30/C/debugg_tool_gdb3/"  title="本文主要来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb(3)</a>
-      </li>
-    
-      <li>
-        <a href="/2020/03/29/C/debugg_tool_gdb2/"  title="本文主要来自 《Linux_c编程一站式学习》" ><i class="fa fa-file-o"></i>调试工具gdb（2）</a>
       </li>
     
   </ul>
